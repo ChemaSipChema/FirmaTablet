@@ -1,45 +1,70 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useState } from 'react';
+import {  ActivityIndicator,  View,} from 'react-native';
+import FirmaScreen from './src/screens/FirmaScreen';
+import ConfiguracionScreen from './src/screens/ConfiguracionScreen';
+import { cargarConfiguracion,} from './src/services/Configuracion';
+import { ConfiguracionTablet } from './src/types/ConfiguracionTablet';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function App() {
+  const [configuracion, setConfiguracion] = useState<ConfiguracionTablet | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [mostrarConfiguracion, setMostrarConfiguracion] = useState(false);
+  useEffect(() => {
+    iniciar();
+  }, []);
 
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
+  const iniciar = async () => {
+    const config = await cargarConfiguracion();
+    setConfiguracion(config);
+    /*
+     * Primera ejecución:
+     * si no hay URL o TabletId,
+     * abrimos configuración.
+     */
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
+    if (!config.url || !config.tabletId ) {
+      setMostrarConfiguracion(true);
+    }
+    setMostrarConfiguracion(true)
+    setCargando(false);
+  };
 
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
+  if (cargando || configuracion === null) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+        }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (mostrarConfiguracion) {
+    return (
+      <ConfiguracionScreen
+        configuracion={configuracion}
+        onGuardar={config => {
+          setConfiguracion(config);
+          setMostrarConfiguracion(false);
+        }}
+        onCancelar={
+          configuracion.url
+            ? () => setMostrarConfiguracion(false)
+            : undefined
+        }
       />
-    </View>
+    );
+  }
+
+  return (
+    <FirmaScreen
+      configuracion={configuracion}
+      onConfiguracion={() => {
+        setMostrarConfiguracion(true);
+      }}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;
